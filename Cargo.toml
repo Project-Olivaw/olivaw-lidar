@@ -1,0 +1,29 @@
+[package]
+name = "olivaw-lidar"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Pure-Rust driver for SLAMTEC RPLIDAR laser range scanners"
+license = "MIT"
+repository = "https://github.com/Project-Olivaw/olivaw-lidar"
+keywords = ["lidar", "rplidar", "slamtec", "robotics", "driver"]
+categories = ["hardware-support", "no-std", "science::robotics"]
+
+[features]
+default = ["std"]
+## Enables the `transport` and `device` layers (serial I/O). Disable to use
+## only the `no_std` `protocol` parsing core.
+std = ["dep:serialport", "thiserror/std"]
+
+[dependencies]
+# default-features = false drops the libudev C linkage on Linux; serialport 4.2+
+# falls back to sysfs enumeration, keeping the build pure Rust.
+serialport = { version = "4.2", optional = true, default-features = false }
+thiserror = { version = "2", default-features = false }
+
+[lints.rust]
+missing_docs = "warn"
+unsafe_code = "forbid"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
