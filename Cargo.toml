@@ -24,7 +24,8 @@ thiserror = { version = "2", default-features = false }
 [dev-dependencies]
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
-rerun = "0.33"
+# Keep in sync with the viewer you install (see README "Visualization").
+rerun = "0.34.1"
 
 [[example]]
 name = "info"
