@@ -277,7 +277,7 @@ serialport = "4"           # cross-platform serial, pure Rust
 thiserror = "2"
 
 [dev-dependencies]
-rerun = "0.33"             # visualization in examples only
+rerun = "0.34.1"             # visualization in examples only
 clap = { version = "4", features = ["derive"] }
 anyhow = "1"
 ```

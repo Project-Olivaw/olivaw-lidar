@@ -5,7 +5,7 @@ Pure-Rust driver for SLAMTEC RPLIDAR laser range scanners. No C++ SDK, no FFI, n
 Primary target: **RPLIDAR C1**. Designed to extend to the A/S series. Part of
 [Project Olivaw](https://github.com/Project-Olivaw) — robotics in Rust.
 
-<!-- TODO: GIF of examples/rerun_viz.rs here once recorded on hardware -->
+![Rerun visualization of olivaw-lidar](.github/assets/viz.gif)
 
 ## Quickstart
 
@@ -49,16 +49,39 @@ recorded sessions replay through the exact same code path as a live device.
 
 ## Examples (the hardware test suite)
 
-| Example | What it proves |
-|---|---|
-| `cargo run --example info` | Port + protocol work: prints model, firmware, serial, health |
-| `cargo run --example record` | Captures real wire bytes into `tests/fixtures/` |
-| `cargo run --example basic_scan` | Streams assembled 360° scans to stdout |
-| `cargo run --example rerun_viz` | Live 2D point cloud in [rerun](https://rerun.io) |
+| Example                          | What it proves                                               |
+| -------------------------------- | ------------------------------------------------------------ |
+| `cargo run --example info`       | Port + protocol work: prints model, firmware, serial, health |
+| `cargo run --example record`     | Captures real wire bytes into `tests/fixtures/`              |
+| `cargo run --example basic_scan` | Streams assembled 360° scans to stdout                       |
+| `cargo run --example rerun_viz`  | Live 2D point cloud in [rerun](https://rerun.io)             |
 
 All examples auto-detect the serial port (CP210x/CH340 USB bridges) on macOS,
 Linux and Windows, and accept `--port <PATH>` to override. On macOS the
 `/dev/cu.*` device is preferred over `/dev/tty.*`, which can block on open.
+
+### Visualization
+
+`rerun_viz` has two modes:
+
+```sh
+cargo run --example rerun_viz                     # opens the rerun viewer live
+cargo run --example rerun_viz -- --save room.rrd  # headless: no window, writes a file
+```
+
+The live mode needs the [rerun viewer](https://rerun.io/docs/getting-started/installing-viewer)
+binary on your `PATH` (the `--save` mode needs nothing). Install it with any of:
+
+```sh
+uv tool install rerun-sdk         # fastest: prebuilt binary
+pip3 install rerun-sdk            # same, via pip
+cargo install rerun-cli --locked  # builds from source (slow)
+```
+
+Keep the viewer's version aligned with this crate's `rerun` dev-dependency
+(currently **0.34**) or the viewer will warn about a version mismatch — e.g.
+`uv tool install rerun-sdk==0.34.1`. A saved `.rrd` opens anytime with
+`rerun room.rrd`.
 
 ## Status
 
