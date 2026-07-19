@@ -1,13 +1,21 @@
 //! Live 2D point cloud in the [rerun](https://rerun.io) viewer.
 //!
 //! ```sh
-//! cargo run --example rerun_viz                    # spawn the viewer
-//! cargo run --example rerun_viz -- --save out.rrd  # record to a file instead
+//! cargo run --example rerun_viz                    # spawn the viewer window
+//! cargo run --example rerun_viz -- --save out.rrd  # headless: record to a file instead
 //! ```
 //!
-//! Spawning requires the `rerun` viewer binary (`cargo install rerun-cli`
-//! or `pip install rerun-sdk`); `--save` needs nothing extra and the file
-//! can be opened later with `rerun out.rrd`.
+//! Spawning requires the `rerun` viewer binary on your `PATH`. Install it
+//! with any of (version should match this crate's `rerun` dev-dependency):
+//!
+//! ```sh
+//! uv tool install rerun-sdk        # fastest: prebuilt binary via uv
+//! pip3 install rerun-sdk           # same, via pip
+//! cargo install rerun-cli --locked # builds the viewer from source (slow)
+//! ```
+//!
+//! `--save` needs no viewer at all — it never opens a window; open the
+//! resulting file later with `rerun out.rrd`.
 
 use std::path::PathBuf;
 use std::time::Instant;
@@ -48,9 +56,11 @@ fn main() -> anyhow::Result<()> {
         Some(path) => builder
             .save(path)
             .with_context(|| format!("failed to open {} for recording", path.display()))?,
-        None => builder
-            .spawn()
-            .context("failed to spawn the rerun viewer — is it installed? (cargo install rerun-cli). Alternatively use --save out.rrd")?,
+        None => builder.spawn().context(
+            "failed to spawn the rerun viewer — is it installed?\n\
+             Install it with `uv tool install rerun-sdk` (or `pip3 install rerun-sdk`),\n\
+             or skip the viewer entirely with `--save out.rrd`.",
+        )?,
     };
 
     let mut lidar =
