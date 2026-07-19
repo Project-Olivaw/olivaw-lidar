@@ -21,6 +21,27 @@ std = ["dep:serialport", "thiserror/std"]
 serialport = { version = "4.2", optional = true, default-features = false }
 thiserror = { version = "2", default-features = false }
 
+[dev-dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+rerun = "0.33"
+
+[[example]]
+name = "info"
+required-features = ["std"]
+
+[[example]]
+name = "record"
+required-features = ["std"]
+
+[[example]]
+name = "basic_scan"
+required-features = ["std"]
+
+[[example]]
+name = "rerun_viz"
+required-features = ["std"]
+
 [lints.rust]
 missing_docs = "warn"
 unsafe_code = "forbid"

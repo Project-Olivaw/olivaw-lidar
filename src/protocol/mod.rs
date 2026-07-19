@@ -10,6 +10,9 @@
 //! preceded by a 7-byte descriptor.
 
 mod command;
+pub mod descriptor;
+pub mod info;
+pub mod scan_node;
 
 pub use command::{Command, MAX_REQUEST_LEN, MOTOR_PWM_MAX, SYNC_BYTE};
 
@@ -62,6 +65,16 @@ pub enum ProtocolError {
     /// A `GET_HEALTH` response carried a status byte outside `0..=2`.
     #[error("invalid health status byte {0:#04x}")]
     InvalidHealthStatus(u8),
+
+    /// A 5-byte scan node failed its validity check (start-flag pair or
+    /// check bit). The stream is desynchronized; discard one byte and retry.
+    #[error("invalid scan node: byte0={byte0:#04x}, byte1={byte1:#04x}")]
+    InvalidScanNode {
+        /// First node byte: quality + start-flag pair.
+        byte0: u8,
+        /// Second node byte: low angle bits + check bit.
+        byte1: u8,
+    },
 
     /// A checksum-protected payload failed verification.
     ///

@@ -1,6 +1,7 @@
 //! The crate-level error type.
 
 use crate::protocol::ProtocolError;
+use crate::transport::TransportError;
 
 /// Any failure while talking to a lidar.
 ///
@@ -20,6 +21,12 @@ pub enum LidarError {
     /// Received bytes did not match the RPLIDAR wire format.
     #[error(transparent)]
     Protocol(#[from] ProtocolError),
+
+    /// A transport failure other than a timeout or a serial-port error
+    /// (those are upgraded to [`LidarError::Timeout`] and
+    /// [`LidarError::Serial`] with more context).
+    #[error("transport error: {0}")]
+    Transport(TransportError),
 
     /// The device did not answer in time. Check that the correct port was
     /// selected and that the baud rate matches the model.
