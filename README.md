@@ -85,13 +85,50 @@ Keep the viewer's version aligned with this crate's `rerun` dev-dependency
 
 ## Status
 
+**The RPLIDAR C1 is fully supported.** Everything the C1 offers over its serial
+protocol is implemented and verified against real hardware:
+
 - [x] Info / health / stop / reset / motor PWM — verified on a real C1
 - [x] Standard scan (0x20): node parsing, scan assembly, byte-level desync recovery
       (60 s live soak: 583 scans at ~10 Hz, ~512 points each, zero desync)
 - [x] Replay + mock transports, fixture-driven test suite
 - [x] Fixtures recorded from real hardware (`tests/fixtures/c1_*.bin`)
-- [ ] Express scan (0x82)
-- [ ] Additional models (A1/A2/A3/S1/S2)
+- [x] `no_std` parser core, cross-checked for `aarch64-unknown-linux-gnu` (Raspberry Pi)
+
+## Future work
+
+None of this is needed to use a C1 — it is the roadmap for extending the driver
+to the rest of the RPLIDAR family. The ground rule for all of it: **record real
+wire fixtures from the target device first** (`examples/record.rs`), then build
+the parser against those fixtures offline, exactly as the C1 support was built.
+
+### Express scan (0x82) — needed for faster models, not the C1
+
+The standard scan spends 5 bytes per measurement. Express mode packs 32
+measurements into an 84-byte checksummed "capsule" with delta-angle encoding —
+about half the bytes per sample. The C1's ~5 kHz sample rate fits comfortably
+through standard scan at 460800 baud (measured: ~512 points × ~10 Hz), so
+express buys nothing there. It becomes mandatory for A3/S-series units whose
+16–32 kHz rates physically cannot fit through the 5-byte format. Implementing
+it means: capsule parser in `protocol/express.rs` (stateful across capsules,
+checksum-validated → the dormant `ProtocolError::Checksum` variant),
+`EXPRESS_SCAN` request framing with payload, and fixtures from a device that
+actually streams it.
+
+### Additional models (A1 / A2 / A3 / S1 / S2)
+
+The architecture is ready (trait-based transport, `LidarConfig` overrides);
+each model needs a small, specific slice of work:
+
+| Model | Baud | What it needs beyond the C1 path |
+|---|---|---|
+| A1 | 115200 | DTR-pin motor control (not the 0xF0 PWM command — the hook point is marked in `transport/serial.rs`) |
+| A2 | 256000 | DTR motor control; express scan recommended |
+| A3 | 256000 | `GET_LIDAR_CONF` (0x84) scan-mode discovery; express/dense scan for rated sample rates |
+| S1/S2 | 256000 | Same as A3; TOF-specific ranges |
+
+Plus, for every model: its `model_name()` byte mapping and a `LidarConfig`
+preset, both confirmed against real hardware.
 
 ## License
 
