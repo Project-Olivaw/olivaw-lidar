@@ -36,16 +36,57 @@ olivaw-lidar = { version = "0.1", default-features = false }  # no_std parsers o
 
 ## Architecture
 
-```
-protocol/   PURE: bytes in, typed values out. no_std, no I/O, tested on fixtures.
-transport/  Trait-based I/O: SerialTransport (hardware), ReplayTransport
-            (recorded sessions), MockTransport (tests).
-device/     High-level Lidar API: request/response, scan assembly, desync recovery.
+Protocol parsing is strictly separated from I/O — the single most important
+structural decision in the crate:
+
+```mermaid
+flowchart TD
+    subgraph dev ["device.rs (std)"]
+        B["Lidar&lt;T: Transport&gt;<br/>request/response, scan assembly,<br/>desync recovery, timeout context"]
+    end
+
+    subgraph tr ["transport/ (std, trait-based I/O)"]
+        C["SerialTransport<br/>real hardware"]
+        D["ReplayTransport<br/>recorded session"]
+        E["MockTransport<br/>scripted tests"]
+    end
+
+    subgraph proto ["protocol/ (no_std, pure: bytes in, typed values out)"]
+        F["command.rs<br/>request framing"]
+        G["descriptor.rs<br/>response descriptors"]
+        H["info.rs<br/>DeviceInfo, HealthStatus"]
+        I["scan_node.rs<br/>measurement nodes"]
+    end
+
+    B -- "raw bytes" --> C
+    B -- "raw bytes" --> D
+    B -- "raw bytes" --> E
+    B -- "encode / parse" --> proto
 ```
 
 Because parsing never touches I/O, the full test suite — including desync
 recovery against corrupted streams — runs in CI with no hardware attached, and
 recorded sessions replay through the exact same code path as a live device.
+
+A scan session on the wire, including the C1's motor spin-up (handled by
+`LidarConfig::scan_startup_timeout`):
+
+```mermaid
+sequenceDiagram
+    participant App
+    participant L as Lidar
+    participant C1 as RPLIDAR C1
+
+    App->>L: start_scan()
+    L->>C1: SET_MOTOR_PWM(660), settle 50 ms
+    L->>C1: SCAN (0xA5 0x20)
+    C1-->>L: scan descriptor (immediate)
+    Note over C1: motor spin-up, about 2 s of silence
+    C1-->>L: 5-byte nodes, about 5.1 kHz
+    Note over L: assemble rotations between start flags,<br/>byte-level resync on corruption
+    L-->>App: Scan (about 512 points, about 10 Hz)
+    App->>L: stop()
+```
 
 ## Examples (the hardware test suite)
 
@@ -129,6 +170,22 @@ each model needs a small, specific slice of work:
 
 Plus, for every model: its `model_name()` byte mapping and a `LidarConfig`
 preset, both confirmed against real hardware.
+
+## Documentation
+
+The [`documentation/`](documentation/) folder is the project's long-term
+memory — written so that anyone (including a future you, months away from the
+code) can understand what was built, how it works, and where to take it next:
+
+| Document | Covers |
+|---|---|
+| [Project overview](documentation/01-project-overview.md) | Goals, the pure-Rust constraint, scope boundaries |
+| [Architecture](documentation/02-architecture.md) | The three layers, every file's job, error tiers, desync recovery |
+| [Protocol](documentation/03-protocol.md) | The RPLIDAR wire format byte by byte, verified on real hardware |
+| [Development process](documentation/04-development-process.md) | The fixture-first methodology and the bugs reality caught |
+| [Testing strategy](documentation/05-testing-strategy.md) | The three test tiers and the rules that keep CI hardware-free |
+| [Hardware notes](documentation/06-hardware-notes.md) | Measured C1 behavior, per-OS serial handling, sanity numbers |
+| [Future work](documentation/07-future-work.md) | Express scan, other models, known gaps, and where to beat the reference SDK |
 
 ## License
 
